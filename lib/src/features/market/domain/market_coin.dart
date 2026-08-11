@@ -1,11 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-// These parts will be generated in Step 5
 part 'market_coin.freezed.dart';
 part 'market_coin.g.dart';
 
 @freezed
-class MarketCoin with _$MarketCoin {
+abstract class MarketCoin with _$MarketCoin {
   const factory MarketCoin({
     required String id,
     required String symbol,
