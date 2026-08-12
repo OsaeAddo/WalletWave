@@ -7,13 +7,13 @@ part of 'market_coin.dart';
 // **************************************************************************
 
 _MarketCoin _$MarketCoinFromJson(Map<String, dynamic> json) => _MarketCoin(
-  id: json['id'] as String,
-  symbol: json['symbol'] as String,
-  name: json['name'] as String,
-  currentPrice: (json['current_price'] as num).toDouble(),
-  priceChange24h: (json['price_change_percentage_24h'] as num?)?.toDouble(),
-  imageUrl: json['image'] as String,
-);
+      id: json['id'] as String,
+      symbol: json['symbol'] as String,
+      name: json['name'] as String,
+      currentPrice: (json['current_price'] as num).toDouble(),
+      priceChange24h: (json['price_change_percentage_24h'] as num?)?.toDouble(),
+      imageUrl: json['image'] as String,
+    );
 
 Map<String, dynamic> _$MarketCoinToJson(_MarketCoin instance) =>
     <String, dynamic>{
