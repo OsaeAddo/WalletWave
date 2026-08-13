@@ -3,10 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/market_repository.dart';
 import '../domain/market_coin.dart';
 
-// Automatically fetches and caches the network request
 final marketCoinsProvider = FutureProvider<List<MarketCoin>>((ref) async {
   final repository = ref.watch(marketRepositoryProvider);
-  return repository.fetchMarketCoins();
+
+  // 1. Return cache immediately if available
+  final cached = await repository.getCachedMarketCoins();
+  if (cached.isNotEmpty) {
+    // Asynchronously update in the background
+    repository.fetchAndCacheMarketCoins().then((fresh) {
+      ref.invalidateSelf(); // Refresh provider when new network data lands
+    }).catchError((_) {});
+    return cached;
+  }
+
+  // 2. Fall back to network fetch on first launch
+  return repository.fetchAndCacheMarketCoins();
 });
 
 class MarketDashboardScreen extends ConsumerWidget {
@@ -22,9 +33,12 @@ class MarketDashboardScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            // Forces the provider to re-run the network request
-            onPressed: () => ref.refresh(marketCoinsProvider),
-          ),
+            onPressed: () async {
+              final repo = ref.read(marketRepositoryProvider);
+              await repo.fetchAndCacheMarketCoins();
+              ref.invalidate(marketCoinsProvider);
+            },
+          )
         ],
       ),
       body: marketData.when(
