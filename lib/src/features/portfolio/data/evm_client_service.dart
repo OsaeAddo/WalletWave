@@ -1,4 +1,5 @@
 import 'package:web3dart/web3dart.dart';
+import 'package:wallet/wallet.dart';
 import 'package:http/http.dart' as http;
 
 class EvmClientService {
