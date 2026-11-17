@@ -1,3 +1,7 @@
+# Isar Native Test Binaries
+/libisar.so
+isar_test_dir_*/
+
 # Miscellaneous
 *.class
 *.log

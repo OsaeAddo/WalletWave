@@ -1,5 +1,4 @@
-import 'package:web3dart/web3dart.dart';
-import 'package:web3dart/src/utils/ether_unit.dart';
+import 'package:wallet/wallet.dart';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;

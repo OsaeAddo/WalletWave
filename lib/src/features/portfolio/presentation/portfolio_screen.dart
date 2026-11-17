@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:web3dart/web3dart.dart';
+import 'package:wallet/wallet.dart';
 import '../data/evm_provider.dart';
 import '../domain/wallet_balance.dart';
 
