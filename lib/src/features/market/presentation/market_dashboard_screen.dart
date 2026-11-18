@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/market_providers.dart';
-import '../data/market_repository.dart';
 import '../domain/market_coin.dart';
 import '../data/market_price_ws_provider.dart';
 
@@ -18,11 +17,8 @@ class MarketDashboardScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () async {
-              final repo = ref.read(marketRepositoryProvider);
-              await repo.fetchAndCacheMarketCoins();
-              ref.invalidate(marketCoinsProvider);
-            },
+            onPressed: () =>
+                ref.read(marketCoinsProvider.notifier).refresh(),
           )
         ],
       ),

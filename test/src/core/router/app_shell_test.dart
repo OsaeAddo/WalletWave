@@ -12,7 +12,8 @@ void main() {
       ProviderScope(
         overrides: [
           // Avoid Isar, HTTP and WebSocket: the market list is simply empty.
-          marketCoinsProvider.overrideWith((ref) async => <MarketCoin>[]),
+          marketCoinsProvider
+              .overrideWith(() => _EmptyMarketCoinsNotifier()),
         ],
         child: const WalletWaveApp(),
       ),
@@ -39,4 +40,9 @@ void main() {
     // The text survives because indexedStack keeps the branch mounted.
     expect(find.text('0xabc123'), findsOneWidget);
   });
+}
+
+class _EmptyMarketCoinsNotifier extends MarketCoinsNotifier {
+  @override
+  Future<List<MarketCoin>> build() async => <MarketCoin>[];
 }
