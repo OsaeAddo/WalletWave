@@ -24,13 +24,15 @@ lib/
     ├── core/                       # Shared infrastructure
     │   ├── database/               # Isar instance provider
     │   ├── network/                # Dio client and interceptors
-    │   └── router/                 # GoRouter configuration
+    │   └── router/                 # GoRouter plus AppShell (bottom tabs)
     └── features/                   # Feature-first boundaries
         ├── market/
+        │   ├── application/        # Market providers
         │   ├── data/               # MarketRepository, Isar entities, WebSocket
         │   ├── domain/             # MarketCoin model
         │   └── presentation/       # Market dashboard UI
         └── portfolio/
+            ├── application/        # Portfolio providers
             ├── data/               # EvmClientService, EVM providers
             ├── domain/             # WalletBalance model
             └── presentation/       # Portfolio UI

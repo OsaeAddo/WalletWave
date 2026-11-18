@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_wave/src/features/market/domain/market_coin.dart';
-import 'package:wallet_wave/src/features/market/presentation/market_dashboard_screen.dart';
+import 'package:wallet_wave/src/features/market/application/market_providers.dart';
 
 void main() {
   // 1. Arrange: Define static mock data to feed the provider

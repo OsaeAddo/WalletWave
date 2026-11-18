@@ -32,7 +32,7 @@ Each row names the file that proves the claim.
 | EVM native balance | Done | `lib/src/features/portfolio/data/evm_client_service.dart` |
 | EVM ERC-20 balance | Done (service), no UI | `evm_client_service.dart` `getErc20Balance` |
 | Portfolio screen | Done (native balance lookup) | `lib/src/features/portfolio/presentation/portfolio_screen.dart` |
-| Navigation shell (tabs) | **Missing** | `lib/src/core/router/app_router.dart` has one `/` route |
+| Navigation shell (tabs) | Done | `lib/src/core/router/app_shell.dart`, `app_router.dart` |
 | Auth domain (login, sessions, guards) | **Missing** | no `features/auth/` directory |
 | Saved wallets / nicknames | **Missing** | no wallet repository or entity |
 | Multi-chain switching | **Missing** | single Ethereum mainnet RPC only |
@@ -54,21 +54,22 @@ lib/
     ├── core/
     │   ├── database/             # isarProvider (overridden in main)
     │   ├── network/              # dioProvider, interceptors, ApiException
-    │   └── router/               # goRouterProvider
+    │   └── router/               # goRouterProvider, AppShell (bottom tabs)
     └── features/
         ├── market/
+        │   ├── application/      # marketCoinsProvider, search/filter providers
         │   ├── data/             # repository, Isar entity + mapper, WS provider
         │   ├── domain/           # MarketCoin (Freezed)
         │   └── presentation/     # MarketDashboardScreen
         └── portfolio/
+            ├── application/      # selectedAddressProvider, walletBalanceProvider
             ├── data/             # EvmClientService, evmClientServiceProvider
             ├── domain/           # WalletBalance (Freezed)
             └── presentation/     # PortfolioScreen
 ```
 
-**Dependency rule:** `presentation → application → data/domain`. Providers do not
-live in widget files. (M1 is the first step toward this; some providers still sit in
-`presentation/`.)
+**Dependency rule:** `presentation → application → data/domain`. Providers live in
+`application/`, never in widget files.
 
 ## 4. Dependencies and why
 
@@ -111,8 +112,6 @@ class.
 | `AuthInterceptor` attaches the bearer token to public CoinGecko requests | M2 |
 | `marketCoinsProvider` calls `invalidateSelf()` after refresh → refresh loop | M2 |
 | WebSocket reconnects after the notifier is disposed | M2 |
-| Providers defined inside presentation files | M1 |
-| No navigation shell; portfolio unreachable from UI | M1 |
 
 ## 7. How to run and verify
 
@@ -128,8 +127,8 @@ dart run build_runner build        # after changing generated models
 
 | Milestone | Goal |
 |---|---|
-| **M0** | Green build, committed generated code, analyzer scope, docs |
-| **M1** | Bottom-navigation shell (Markets / Portfolio), providers moved to `application/` |
+| **M0** | ✅ Green build, committed generated code, analyzer scope, docs |
+| **M1** | ✅ Bottom-navigation shell (Markets / Portfolio), providers moved to `application/` |
 | **M2** | Fix P0 bugs: token leak, refresh loop, WS reconnect |
 | **M3** | Portfolio forms and ERC-20 balances in the UI |
 | **M4** | Saved wallets and persistence |
