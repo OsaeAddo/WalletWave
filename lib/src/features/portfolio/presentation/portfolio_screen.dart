@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/portfolio_providers.dart';
+import '../application/saved_wallets_provider.dart';
 import '../domain/portfolio_snapshot.dart';
+import '../domain/saved_wallet.dart';
 import '../domain/token_balance.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
@@ -29,15 +31,45 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
     super.dispose();
   }
 
-  void _submitAddress() {
+  void _loadAddress([String? address]) {
+    final value = (address ?? _addressController.text).trim();
+    if (address != null) _addressController.text = value;
     FocusScope.of(context).unfocus();
-    ref.read(selectedAddressProvider.notifier).state =
-        _addressController.text.trim();
+    ref.read(selectedAddressProvider.notifier).state = value;
+  }
+
+  Future<void> _saveAddress() async {
+    FocusScope.of(context).unfocus();
+    try {
+      await ref
+          .read(savedWalletsProvider.notifier)
+          .save(_addressController.text);
+      if (!mounted) return;
+      _showMessage('Wallet saved');
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _removeWallet(SavedWallet wallet) async {
+    await ref.read(savedWalletsProvider.notifier).remove(wallet.id);
+    if (!mounted) return;
+    _showMessage('${wallet.label} removed');
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final portfolioAsync = ref.watch(portfolioProvider);
+    final savedWallets =
+        ref.watch(savedWalletsProvider).valueOrNull ?? const [];
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,8 +78,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           IconButton(
             tooltip: 'Refresh balances',
             icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.read(portfolioProvider.notifier).refresh(),
+            onPressed: () => ref.read(portfolioProvider.notifier).refresh(),
           ),
         ],
       ),
@@ -58,7 +89,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
           children: [
             TextField(
               controller: _addressController,
-              onSubmitted: (_) => _submitAddress(),
+              onSubmitted: (_) => _loadAddress(),
               decoration: InputDecoration(
                 labelText: 'EVM Wallet Address',
                 hintText: '0x...',
@@ -66,11 +97,47 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
                 suffixIcon: IconButton(
                   tooltip: 'Load balances',
                   icon: const Icon(Icons.arrow_forward),
-                  onPressed: _submitAddress,
+                  onPressed: _loadAddress,
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _loadAddress,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Load'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _saveAddress,
+                  icon: const Icon(Icons.bookmark_add_outlined),
+                  label: const Text('Save'),
+                ),
+              ],
+            ),
+            if (savedWallets.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text('Saved wallets', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final wallet in savedWallets)
+                    InputChip(
+                      avatar:
+                          const Icon(Icons.account_balance_wallet, size: 18),
+                      label: Text(wallet.label),
+                      onPressed: () => _loadAddress(wallet.address),
+                      // Built-in chip delete icon keeps removal discoverable.
+                      onDeleted: () => _removeWallet(wallet),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
             Expanded(
               child: portfolioAsync.when(
                 data: (snapshot) => snapshot == null
@@ -163,7 +230,7 @@ class _PortfolioView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _shortAddress(snapshot.address),
+                  shortAddress(snapshot.address),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -192,12 +259,6 @@ class _PortfolioView extends StatelessWidget {
           ),
       ],
     );
-  }
-
-  /// `0x1234…abcd` keeps the card compact for long addresses.
-  static String _shortAddress(String address) {
-    if (address.length <= 12) return address;
-    return '${address.substring(0, 6)}…${address.substring(address.length - 4)}';
   }
 }
 
