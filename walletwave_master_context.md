@@ -98,8 +98,9 @@ class.
 - **Generated code is committed.** `*.g.dart` and `*.freezed.dart` are tracked so a
   fresh clone builds with only `flutter pub get`. Regenerate via `build_runner` and
   commit the result; never hand-edit generated files.
-- **One Dio per upstream.** `dioProvider` is bound to CoinGecko's base URL. Adding a
-  second upstream means a second client, not a base-URL switch.
+- **One Dio per upstream.** `dioProvider` is bound to CoinGecko's base URL and is
+  public: it must not carry user credentials. Authenticated backend calls get their
+  own client with `AuthInterceptor` (M5).
 - **Analyzer excludes generated and platform folders.** Keeps the signal on
   hand-written code. Stricter lints (`strict-casts`, `require_trailing_commas`,
   `unawaited_futures`) are intentionally deferred to milestones that touch the code.
@@ -107,11 +108,14 @@ class.
 
 ## 6. Known issues
 
+None of the original P0 issues remain: the market client no longer sends auth
+tokens, market refresh no longer loops, and the WebSocket stops reconnecting after
+disposal.
+
 | Issue | Milestone |
 |---|---|
-| `AuthInterceptor` attaches the bearer token to public CoinGecko requests | M2 |
-| `marketCoinsProvider` calls `invalidateSelf()` after refresh → refresh loop | M2 |
-| WebSocket reconnects after the notifier is disposed | M2 |
+| WS reconnect uses a fixed 5s delay instead of backoff | later |
+| `EvmClientService` never disposed by `evmClientServiceProvider` | later |
 
 ## 7. How to run and verify
 
@@ -129,7 +133,7 @@ dart run build_runner build        # after changing generated models
 |---|---|
 | **M0** | ✅ Green build, committed generated code, analyzer scope, docs |
 | **M1** | ✅ Bottom-navigation shell (Markets / Portfolio), providers moved to `application/` |
-| **M2** | Fix P0 bugs: token leak, refresh loop, WS reconnect |
+| **M2** | ✅ Fixed P0 bugs: token leak, refresh loop, WS reconnect |
 | **M3** | Portfolio forms and ERC-20 balances in the UI |
 | **M4** | Saved wallets and persistence |
 | **M5** | Auth domain (backend choice documented at that point) |
