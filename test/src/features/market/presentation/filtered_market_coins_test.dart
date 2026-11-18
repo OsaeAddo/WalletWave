@@ -38,9 +38,9 @@ void main() {
   ProviderContainer makeProviderContainer() {
     final container = ProviderContainer(
       overrides: [
-        // Override the FutureProvider to instantly return our static mock data
-        // instead of executing the Isar/Dio repository logic.
-        marketCoinsProvider.overrideWith((ref) => mockCoins),
+        // Replace the cache/network notifier with static mock data.
+        marketCoinsProvider
+            .overrideWith(() => _StaticMarketCoinsNotifier(mockCoins)),
       ],
     );
 
@@ -103,4 +103,13 @@ void main() {
       expect(filteredData.value, isEmpty);
     });
   });
+}
+
+class _StaticMarketCoinsNotifier extends MarketCoinsNotifier {
+  _StaticMarketCoinsNotifier(this.coins);
+
+  final List<MarketCoin> coins;
+
+  @override
+  Future<List<MarketCoin>> build() async => coins;
 }
