@@ -14,7 +14,8 @@ through a raw EVM JSON-RPC client.
   searchable by name or symbol.
 - **Live prices** — Binance mini-ticker WebSocket stream with row-level rebuilds.
 - **Portfolio** — look up an EVM address and see its native ETH balance plus
-  tracked ERC-20 holdings (USDC, USDT, DAI, LINK), all via JSON-RPC.
+  tracked ERC-20 holdings (USDC, USDT, DAI, LINK), all via JSON-RPC. Save wallets
+  locally (Isar) and reload them with one tap.
 
 ## Project layout
 
@@ -33,9 +34,9 @@ lib/
         │   ├── domain/             # MarketCoin model
         │   └── presentation/       # Market dashboard UI
         └── portfolio/
-            ├── application/        # Portfolio providers
-            ├── data/               # EvmClientService, EVM providers
-            ├── domain/             # PortfolioSnapshot, TokenBalance, token list
+            ├── application/        # Portfolio and saved-wallet providers
+            ├── data/               # EvmClientService, saved-wallet repository
+            ├── domain/             # PortfolioSnapshot, TokenBalance, SavedWallet
             └── presentation/       # Portfolio UI
 ```
 
