@@ -13,7 +13,8 @@ through a raw EVM JSON-RPC client.
 - **Markets** — top coins from CoinGecko, cached in Isar, refreshed in the background,
   searchable by name or symbol.
 - **Live prices** — Binance mini-ticker WebSocket stream with row-level rebuilds.
-- **Portfolio** — look up the native balance of any EVM address via JSON-RPC.
+- **Portfolio** — look up an EVM address and see its native ETH balance plus
+  tracked ERC-20 holdings (USDC, USDT, DAI, LINK), all via JSON-RPC.
 
 ## Project layout
 
@@ -34,7 +35,7 @@ lib/
         └── portfolio/
             ├── application/        # Portfolio providers
             ├── data/               # EvmClientService, EVM providers
-            ├── domain/             # WalletBalance model
+            ├── domain/             # PortfolioSnapshot, TokenBalance, token list
             └── presentation/       # Portfolio UI
 ```
 

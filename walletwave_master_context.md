@@ -30,18 +30,18 @@ Each row names the file that proves the claim.
 | Market live prices (WS) | Done, one known reconnect bug | `lib/src/features/market/data/market_price_ws_provider.dart` |
 | Market search/filter | Done | `lib/src/features/market/presentation/market_dashboard_screen.dart` |
 | EVM native balance | Done | `lib/src/features/portfolio/data/evm_client_service.dart` |
-| EVM ERC-20 balance | Done (service), no UI | `evm_client_service.dart` `getErc20Balance` |
-| Portfolio screen | Done (native balance lookup) | `lib/src/features/portfolio/presentation/portfolio_screen.dart` |
+| EVM ERC-20 balance | Done | `evm_client_service.dart` `getErc20Balance`, `ethereum_token.dart` |
+| Portfolio screen | Done (native + tracked ERC-20 balances) | `portfolio_screen.dart`, `portfolio_providers.dart` |
 | Navigation shell (tabs) | Done | `lib/src/core/router/app_shell.dart`, `app_router.dart` |
 | Auth domain (login, sessions, guards) | **Missing** | no `features/auth/` directory |
 | Saved wallets / nicknames | **Missing** | no wallet repository or entity |
 | Multi-chain switching | **Missing** | single Ethereum mainnet RPC only |
-| ERC-20 metadata / custom tokens | **Missing** | no UI or notifier |
+| Custom tokens / user-added metadata | **Missing** | tokens come from the static `kEthereumErc20Tokens` list; no add-token UI |
 | Portfolio fiat valuation | **Missing** | market and portfolio not joined |
 
 There are **no** `WalletRepository`, `EVMWalletEntity`, `EvmNetwork`,
-`kChainErc20Tokens`, `AddCustomTokenDialog`, custom-token notifier, or ERC-20
-metadata features in this repository.
+`AddCustomTokenDialog`, or custom-token notifier in this repository. Token
+metadata exists only as the static `kEthereumErc20Tokens` list.
 
 ## 3. Architecture
 
@@ -62,9 +62,9 @@ lib/
         │   ├── domain/           # MarketCoin (Freezed)
         │   └── presentation/     # MarketDashboardScreen
         └── portfolio/
-            ├── application/      # selectedAddressProvider, walletBalanceProvider
+            ├── application/      # selectedAddressProvider, portfolioProvider
             ├── data/             # EvmClientService, evmClientServiceProvider
-            ├── domain/           # WalletBalance (Freezed)
+            ├── domain/           # PortfolioSnapshot, TokenBalance, token list
             └── presentation/     # PortfolioScreen
 ```
 
@@ -115,7 +115,7 @@ disposal.
 | Issue | Milestone |
 |---|---|
 | WS reconnect uses a fixed 5s delay instead of backoff | later |
-| `EvmClientService` never disposed by `evmClientServiceProvider` | later |
+| ERC-20 list is static; unknown tokens are not displayed | M4 (custom tokens) |
 
 ## 7. How to run and verify
 
@@ -134,7 +134,7 @@ dart run build_runner build        # after changing generated models
 | **M0** | ✅ Green build, committed generated code, analyzer scope, docs |
 | **M1** | ✅ Bottom-navigation shell (Markets / Portfolio), providers moved to `application/` |
 | **M2** | ✅ Fixed P0 bugs: token leak, refresh loop, WS reconnect |
-| **M3** | Portfolio forms and ERC-20 balances in the UI |
+| **M3** | ✅ Portfolio shows native balance plus tracked ERC-20 holdings |
 | **M4** | Saved wallets and persistence |
 | **M5** | Auth domain (backend choice documented at that point) |
 | **M6** | Portfolio valuation, hardening, strict lints |
