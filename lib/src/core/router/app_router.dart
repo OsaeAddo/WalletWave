@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/auth/presentation/account_screen.dart';
 import '../../features/market/presentation/market_dashboard_screen.dart';
 import '../../features/portfolio/presentation/portfolio_screen.dart';
 import 'app_shell.dart';
@@ -35,6 +36,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      // Outside the shell on purpose: the account screen covers the bottom
+      // navigation bar, like a modal settings page.
+      GoRoute(
+        path: '/account',
+        builder: (context, state) => const AccountScreen(),
       ),
     ],
   );

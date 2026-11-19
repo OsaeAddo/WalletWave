@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/presentation/auth_action_button.dart';
 import '../application/portfolio_providers.dart';
 import '../application/saved_wallets_provider.dart';
 import '../domain/portfolio_snapshot.dart';
@@ -53,7 +54,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
   }
 
   Future<void> _removeWallet(SavedWallet wallet) async {
-    await ref.read(savedWalletsProvider.notifier).remove(wallet.id);
+    await ref.read(savedWalletsProvider.notifier).remove(wallet);
     if (!mounted) return;
     _showMessage('${wallet.label} removed');
   }
@@ -75,6 +76,7 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
       appBar: AppBar(
         title: const Text('EVM Portfolio'),
         actions: [
+          const AuthActionButton(),
           IconButton(
             tooltip: 'Refresh balances',
             icon: const Icon(Icons.refresh),
