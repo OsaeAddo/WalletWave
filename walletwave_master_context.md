@@ -34,14 +34,15 @@ Each row names the file that proves the claim.
 | Portfolio screen | Done (native + tracked ERC-20 balances) | `portfolio_screen.dart`, `portfolio_providers.dart` |
 | Navigation shell (tabs) | Done | `lib/src/core/router/app_shell.dart`, `app_router.dart` |
 | Auth domain (login, sessions, guards) | **Missing** | no `features/auth/` directory |
-| Saved wallets / nicknames | **Missing** | no wallet repository or entity |
+| Saved wallets / nicknames | Done | `saved_wallet_repository.dart`, `saved_wallet_entity.dart` |
 | Multi-chain switching | **Missing** | single Ethereum mainnet RPC only |
 | Custom tokens / user-added metadata | **Missing** | tokens come from the static `kEthereumErc20Tokens` list; no add-token UI |
 | Portfolio fiat valuation | **Missing** | market and portfolio not joined |
 
-There are **no** `WalletRepository`, `EVMWalletEntity`, `EvmNetwork`,
-`AddCustomTokenDialog`, or custom-token notifier in this repository. Token
-metadata exists only as the static `kEthereumErc20Tokens` list.
+There is **no** `EVMWalletEntity`, `EvmNetwork`, `AddCustomTokenDialog`, or
+custom-token notifier in this repository. Saved wallets use
+`SavedWalletEntity`; token metadata exists only as the static
+`kEthereumErc20Tokens` list.
 
 ## 3. Architecture
 
@@ -62,9 +63,9 @@ lib/
         │   ├── domain/           # MarketCoin (Freezed)
         │   └── presentation/     # MarketDashboardScreen
         └── portfolio/
-            ├── application/      # selectedAddressProvider, portfolioProvider
-            ├── data/             # EvmClientService, evmClientServiceProvider
-            ├── domain/           # PortfolioSnapshot, TokenBalance, token list
+            ├── application/      # portfolioProvider, savedWalletsProvider
+            ├── data/             # EvmClientService, saved-wallet repository + Isar entity
+            ├── domain/           # PortfolioSnapshot, TokenBalance, SavedWallet, token list
             └── presentation/     # PortfolioScreen
 ```
 
@@ -115,7 +116,7 @@ disposal.
 | Issue | Milestone |
 |---|---|
 | WS reconnect uses a fixed 5s delay instead of backoff | later |
-| ERC-20 list is static; unknown tokens are not displayed | M4 (custom tokens) |
+| ERC-20 list is static; unknown tokens are not displayed | later (custom tokens) |
 
 ## 7. How to run and verify
 
@@ -135,6 +136,6 @@ dart run build_runner build        # after changing generated models
 | **M1** | ✅ Bottom-navigation shell (Markets / Portfolio), providers moved to `application/` |
 | **M2** | ✅ Fixed P0 bugs: token leak, refresh loop, WS reconnect |
 | **M3** | ✅ Portfolio shows native balance plus tracked ERC-20 holdings |
-| **M4** | Saved wallets and persistence |
+| **M4** | ✅ Saved wallets persisted in Isar, selectable from the portfolio screen |
 | **M5** | Auth domain (backend choice documented at that point) |
 | **M6** | Portfolio valuation, hardening, strict lints |
