@@ -1,34 +1,55 @@
 import 'package:dio/dio.dart';
-import 'dio_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Adds `Authorization: Bearer <token>` to outgoing requests.
+///
+/// Not registered on any client today. Supabase's SDK attaches its own auth
+/// header, so the app has no hand-rolled authenticated HTTP client yet. This
+/// class stays here for the FastAPI backend: register it on that backend's
+/// `Dio` instance, and never on the public CoinGecko client (that would leak a
+/// user's token to a third party).
+///
+/// The token is passed as a callback rather than read from storage here, so the
+/// interceptor has no opinion about where sessions live and is trivial to test.
 class AuthInterceptor extends Interceptor {
-  final Ref _ref;
+  AuthInterceptor({
+    required Future<String?> Function() readAccessToken,
+    void Function()? onUnauthorized,
+  })  : _readAccessToken = readAccessToken,
+        _onUnauthorized = onUnauthorized;
 
-  AuthInterceptor(this._ref);
+  final Future<String?> Function() _readAccessToken;
+  final void Function()? _onUnauthorized;
 
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Retrieve the secure token from storage
-    final storage = _ref.read(secureStorageProvider);
-    final token = await storage.read(key: 'auth_token');
-
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final token = await _readAccessToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+      handler.next(options);
+    } catch (error, stackTrace) {
+      // Failing to read a token is not a reason to drop the request; the
+      // server will answer 401 if it matters.
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
     }
-
-    return handler.next(options);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Global handling for expired sessions or unauthorized access
+    // A 401 normally means the access token expired and could not be refreshed.
     if (err.response?.statusCode == 401) {
-      // TODO: Trigger global logout state or refresh token flow
+      _onUnauthorized?.call();
     }
-    return handler.next(err);
+    handler.next(err);
   }
 }
