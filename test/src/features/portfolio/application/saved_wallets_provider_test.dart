@@ -79,7 +79,7 @@ void main() {
         .read(savedWalletsProvider)
         .value!
         .firstWhere((w) => w.label.endsWith('0001'));
-    await notifier.remove(first.id);
+    await notifier.remove(first);
 
     expect(container.read(savedWalletsProvider).value, hasLength(1));
   });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/presentation/auth_action_button.dart';
 import '../application/market_providers.dart';
 import '../domain/market_coin.dart';
 import '../data/market_price_ws_provider.dart';
@@ -15,10 +16,10 @@ class MarketDashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Live Markets'),
         actions: [
+          const AuthActionButton(),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.read(marketCoinsProvider.notifier).refresh(),
+            onPressed: () => ref.read(marketCoinsProvider.notifier).refresh(),
           )
         ],
       ),
