@@ -47,3 +47,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+.neon
+node_modules/
+
+# Neon env pull writes real secrets here. Commit .env.example only.
+.env
+.env.local
+.env.*.local
