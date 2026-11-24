@@ -3,7 +3,19 @@ import { defineConfig } from "@neon/config/v1";
 export default defineConfig({
   dataApi: true,
   functions: {
-    api: { name: "api", source: "./functions/api.ts" },
+    api: {
+      name: "api",
+      source: "./functions/api.ts",
+      env: {
+        // Neon does not inject the Realtime secret into functions, so it is
+        // passed explicitly at deploy time from .env.local. `NEON_` names are
+        // reserved, hence the project-specific name.
+        WALLETWAVE_REALTIME_SECRET: {
+          value: process.env.NEON_REALTIME_SECRET,
+          required: true,
+        },
+      },
+    },
   },
   // Declare your Neon services here
   preview: {
