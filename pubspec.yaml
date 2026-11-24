@@ -19,7 +19,6 @@ dependencies:
   isar_community_flutter_libs: ^3.3.2
   json_annotation: ^4.9.0
   path_provider: ^2.1.5
-  supabase_flutter: ^2.18.3
   wallet: ^0.0.18
   web3dart: ^3.0.3
   web_socket_channel: ^3.0.3

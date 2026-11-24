@@ -2,7 +2,7 @@ import '../domain/auth_error.dart';
 import '../domain/auth_repository.dart';
 import '../domain/auth_user.dart';
 
-/// Used when the app was built without Supabase keys.
+/// Used when the app was built without Neon backend settings.
 ///
 /// The market and portfolio features work fully offline, so a missing backend
 /// must not be a startup crash. This repository reports "signed out forever"
@@ -37,6 +37,9 @@ class DisabledAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {}
+
+  @override
+  Future<void> invalidateSession() async {}
 
   @override
   Future<String?> currentAccessToken() async => null;

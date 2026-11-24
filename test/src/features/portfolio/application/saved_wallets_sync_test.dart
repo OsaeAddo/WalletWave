@@ -12,7 +12,7 @@ import 'package:wallet_wave/src/features/portfolio/data/saved_wallet_repository.
 import 'package:wallet_wave/src/features/portfolio/data/saved_wallets_remote.dart';
 import 'package:wallet_wave/src/features/portfolio/data/saved_wallets_remote_provider.dart';
 
-/// In-memory stand-in for the Supabase table.
+/// In-memory stand-in for the Neon `saved_wallets` table.
 class _FakeRemote implements SavedWalletsRemote {
   _FakeRemote([Map<String, String>? initial]) : rows = {...?initial};
 
