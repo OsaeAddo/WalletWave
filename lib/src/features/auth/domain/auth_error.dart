@@ -12,7 +12,7 @@ class AuthException implements Exception {
   String toString() => message;
 }
 
-/// Cloud sync is optional. When the app is built without Supabase keys, this
+/// Cloud sync is optional. When the app is built without Neon URLs, this
 /// is thrown if a user tries to sign in, and the UI shows a setup hint instead
 /// of a crash.
 class AuthUnavailableException extends AuthException {

@@ -9,8 +9,8 @@ class RemoteSavedWallet {
 /// The cloud copy of saved wallets.
 ///
 /// This is an interface for the same reason [AuthRepository] is: tests can
-/// supply a fake without a network, and the Supabase version can be replaced
-/// by a FastAPI version later.
+/// supply a fake without a network, and the Neon version can be replaced by a
+/// FastAPI version later.
 abstract interface class SavedWalletsRemote {
   Future<List<RemoteSavedWallet>> fetchAll();
 

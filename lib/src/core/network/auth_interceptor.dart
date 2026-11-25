@@ -2,11 +2,9 @@ import 'package:dio/dio.dart';
 
 /// Adds `Authorization: Bearer <token>` to outgoing requests.
 ///
-/// Not registered on any client today. Supabase's SDK attaches its own auth
-/// header, so the app has no hand-rolled authenticated HTTP client yet. This
-/// class stays here for the FastAPI backend: register it on that backend's
-/// `Dio` instance, and never on the public CoinGecko client (that would leak a
-/// user's token to a third party).
+/// Registered on the Neon Data API / functions client only. Never register it
+/// on the public CoinGecko client: that would leak a user's token to a third
+/// party.
 ///
 /// The token is passed as a callback rather than read from storage here, so the
 /// interceptor has no opinion about where sessions live and is trivial to test.

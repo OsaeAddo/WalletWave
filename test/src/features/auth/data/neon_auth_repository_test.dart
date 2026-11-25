@@ -22,16 +22,18 @@ void main() {
   });
 
   group('jwtExpiry', () {
+    String encode(Object value) =>
+        base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
+
     String tokenWith(Map<String, Object?> payload) {
-      final encode = (Object value) =>
-          base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
       return '${encode({'alg': 'EdDSA'})}.${encode(payload)}.signature';
     }
 
     test('reads the exp claim as UTC', () {
       final expiry = jwtExpiry(tokenWith({'exp': 1795479155}));
 
-      expect(expiry, DateTime.fromMillisecondsSinceEpoch(1795479155000, isUtc: true));
+      expect(expiry,
+          DateTime.fromMillisecondsSinceEpoch(1795479155000, isUtc: true));
     });
 
     test('returns null for malformed tokens', () {
