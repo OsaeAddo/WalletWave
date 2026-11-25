@@ -12,8 +12,7 @@ void main() {
       ProviderScope(
         overrides: [
           // Avoid Isar, HTTP and WebSocket: the market list is simply empty.
-          marketCoinsProvider
-              .overrideWith(() => _EmptyMarketCoinsNotifier()),
+          marketCoinsProvider.overrideWith(() => _EmptyMarketCoinsNotifier()),
         ],
         child: const WalletWaveApp(),
       ),

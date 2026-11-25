@@ -57,7 +57,8 @@ void main() {
     expect(rows.single.address, '0xabc');
     expect(rows.single.label, 'Main');
     final request = adapter.requests.single;
-    expect(request.uri.toString(), startsWith('https://data.example/neondb/rest/v1/saved_wallets'));
+    expect(request.uri.toString(),
+        startsWith('https://data.example/neondb/rest/v1/saved_wallets'));
     expect(request.queryParameters['select'], 'address,label');
     expect(request.queryParameters['order'], 'created_at.desc');
   });
@@ -70,7 +71,8 @@ void main() {
     final request = adapter.requests.single;
     expect(request.method, 'POST');
     expect(request.queryParameters['on_conflict'], 'user_id,address');
-    expect(request.headers['Prefer'], 'resolution=merge-duplicates,return=minimal');
+    expect(request.headers['Prefer'],
+        'resolution=merge-duplicates,return=minimal');
     expect((request.data as Map)['address'], '0xabc');
   });
 
