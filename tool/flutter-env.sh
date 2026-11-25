@@ -22,10 +22,11 @@ read_value() {
 
 auth_url="$(read_value NEON_AUTH_BASE_URL)"
 data_url="$(read_value NEON_DATA_API_URL)"
+realtime_url="$(read_value NEON_REALTIME_URL)"
 branch_id="$(read_value NEON_BRANCH_ID)"
 host_suffix="$(read_value NEON_FUNCTION_HOST_SUFFIX)"
 
-if [[ -z "$auth_url" || -z "$data_url" || -z "$branch_id" || -z "$host_suffix" ]]; then
+if [[ -z "$auth_url" || -z "$data_url" || -z "$realtime_url" || -z "$branch_id" || -z "$host_suffix" ]]; then
   echo "one of the Neon URLs is missing from $src; run 'npx neon deploy'" >&2
   exit 1
 fi
@@ -38,6 +39,7 @@ cat > .env.flutter <<EOF
 NEON_AUTH_BASE_URL=$auth_url
 NEON_DATA_API_URL=$data_url
 NEON_FUNCTIONS_BASE_URL=$functions_url
+NEON_REALTIME_URL=$realtime_url
 EOF
 
-echo "wrote .env.flutter with 3 public values"
+echo "wrote .env.flutter with 4 public values"

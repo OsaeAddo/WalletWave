@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../portfolio/application/saved_wallets_provider.dart';
+import '../../portfolio/application/saved_wallets_realtime.dart';
+import '../../portfolio/data/neon_realtime_client.dart';
+import '../../portfolio/data/wallet_backup_service.dart';
 import '../application/auth_providers.dart';
 import '../domain/auth_error.dart';
 import '../domain/auth_user.dart';
@@ -96,6 +100,48 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     }
   }
 
+  Future<void> _backup() async {
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final count =
+          await ref.read(savedWalletsProvider.notifier).backupToCloud();
+      if (!mounted) return;
+      _showMessage('Backed up $count wallet${count == 1 ? '' : 's'}.');
+    } on WalletBackupException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Backup failed. Try again.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _restore() async {
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final count =
+          await ref.read(savedWalletsProvider.notifier).restoreFromCloud();
+      if (!mounted) return;
+      _showMessage('Restored $count wallet${count == 1 ? '' : 's'}.');
+    } on WalletBackupException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Restore failed. Try again.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -107,6 +153,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final authState = ref.watch(authStateProvider);
     final user = authState.valueOrNull;
     final available = ref.watch(authControllerProvider).isAvailable;
+    final feed = ref.watch(savedWalletFeedProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Account')),
@@ -117,7 +164,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             constraints: const BoxConstraints(maxWidth: 420),
             child: user == null
                 ? _buildSignedOut(available)
-                : _buildSignedIn(user),
+                : _buildSignedIn(user, feed),
           ),
         ),
       ),
@@ -150,7 +197,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               padding: const EdgeInsets.all(12),
               child: Text(
                 'Cloud sync is not configured in this build. '
-                'See the README "Cloud sync" section for the two '
+                'See the README "Cloud sync" section for the '
                 '--dart-define values.',
                 style: TextStyle(color: theme.colorScheme.onErrorContainer),
               ),
@@ -213,7 +260,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
-  Widget _buildSignedIn(AuthUser user) {
+  Widget _buildSignedIn(AuthUser user, SavedWalletFeedUpdate? feed) {
     final theme = Theme.of(context);
 
     return Column(
@@ -236,6 +283,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge,
         ),
+        const SizedBox(height: 12),
+        _buildLiveStatus(theme, feed),
         const SizedBox(height: 16),
         Text(
           'Saved wallets sync to your account. '
@@ -244,6 +293,47 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Cloud backup', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 6),
+                Text(
+                  'Keep a JSON copy of your wallet list in your private '
+                  'bucket. Restore merges it into this device; newer wallets '
+                  'are never deleted.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: _submitting ? null : _backup,
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        label: const Text('Back up'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _submitting ? null : _restore,
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        label: const Text('Restore'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         if (_error != null) ...[
@@ -259,6 +349,50 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           onPressed: _submitting ? null : _signOut,
           icon: const Icon(Icons.logout),
           label: const Text('Sign out'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiveStatus(ThemeData theme, SavedWalletFeedUpdate? feed) {
+    final status = feed?.status;
+    final latest = feed?.latest;
+
+    final (IconData icon, Color color, String label) = switch (status) {
+      null => (
+          Icons.sync,
+          theme.colorScheme.onSurfaceVariant,
+          'Live sync: connecting…',
+        ),
+      SavedWalletFeedStatus.live => (
+          Icons.bolt,
+          theme.colorScheme.primary,
+          latest == null
+              ? 'Live sync connected'
+              : 'Live sync connected · last ${latest.op}',
+        ),
+      SavedWalletFeedStatus.connecting => (
+          Icons.sync,
+          theme.colorScheme.onSurfaceVariant,
+          'Live sync: reconnecting…',
+        ),
+      SavedWalletFeedStatus.error => (
+          Icons.cloud_off,
+          theme.colorScheme.error,
+          feed?.message ?? 'Live sync offline',
+        ),
+    };
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
+          ),
         ),
       ],
     );

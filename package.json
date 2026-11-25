@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && flutter build linux --debug",
+    "build:sync": "bash tool/flutter-env.sh && flutter build linux --debug --dart-define-from-file=.env.flutter",
+    "test": "flutter test -j 1"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1176.0",
     "@aws-sdk/s3-request-presigner": "^3.1176.0",

@@ -14,6 +14,7 @@ class NeonConfig {
     required this.authBaseUrl,
     required this.dataApiUrl,
     required this.functionsBaseUrl,
+    this.realtimeUrl = '',
     this.authOrigin = 'http://localhost:45871',
   });
 
@@ -23,8 +24,15 @@ class NeonConfig {
   /// PostgREST-compatible Data API base URL, including `/rest/v1`.
   final String dataApiUrl;
 
-  /// Base URL of the `api` Neon Function (empty until 4c is deployed).
+  /// Base URL of the `api` Neon Function.
   final String functionsBaseUrl;
+
+  /// WebSocket endpoint for Neon Realtime (`wss://…`).
+  ///
+  /// Like the other URLs this is public: reading data still requires a
+  /// short-lived sealed capability minted by the function, not a secret baked
+  /// into the binary.
+  final String realtimeUrl;
 
   /// Better Auth rejects POSTs without an `Origin` header. A desktop app is
   /// not a browser, so it sends a localhost origin, which is pre-trusted.
@@ -32,10 +40,11 @@ class NeonConfig {
 
   static const String _authBaseUrl =
       String.fromEnvironment('NEON_AUTH_BASE_URL');
-  static const String _dataApiUrl =
-      String.fromEnvironment('NEON_DATA_API_URL');
+  static const String _dataApiUrl = String.fromEnvironment('NEON_DATA_API_URL');
   static const String _functionsBaseUrl =
       String.fromEnvironment('NEON_FUNCTIONS_BASE_URL');
+  static const String _realtimeUrl =
+      String.fromEnvironment('NEON_REALTIME_URL');
 
   /// True when the two values needed for sign-in and sync were supplied.
   static bool get isConfigured =>
@@ -44,16 +53,24 @@ class NeonConfig {
   /// Same check for an instance, used by providers that may be overridden.
   bool get hasUrls => authBaseUrl.isNotEmpty && dataApiUrl.isNotEmpty;
 
+  /// True when the realtime feed can be reached.
+  bool get hasRealtime => realtimeUrl.isNotEmpty && functionsBaseUrl.isNotEmpty;
+
+  /// True when the `api` function (storage tickets) is configured.
+  bool get hasFunctions => functionsBaseUrl.isNotEmpty;
+
   static const NeonConfig current = NeonConfig(
     authBaseUrl: _authBaseUrl,
     dataApiUrl: _dataApiUrl,
     functionsBaseUrl: _functionsBaseUrl,
+    realtimeUrl: _realtimeUrl,
   );
 
   /// Trailing slashes would produce `//sign-in/email`, which some proxies 404.
   String get authUrl => _trimSlash(authBaseUrl);
   String get dataUrl => _trimSlash(dataApiUrl);
   String get functionsUrl => _trimSlash(functionsBaseUrl);
+  String get realtimeSocketUrl => _trimSlash(realtimeUrl);
 
   static String _trimSlash(String value) =>
       value.endsWith('/') ? value.substring(0, value.length - 1) : value;
