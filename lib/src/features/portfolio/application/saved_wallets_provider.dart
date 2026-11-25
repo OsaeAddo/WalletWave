@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wallet/wallet.dart';
 
@@ -6,8 +8,11 @@ import '../../auth/domain/auth_user.dart';
 import '../data/saved_wallet_repository.dart';
 import '../data/saved_wallets_remote.dart';
 import '../data/saved_wallets_remote_provider.dart';
+import '../data/wallet_backup_service.dart';
 import '../domain/saved_wallet.dart';
 import 'portfolio_providers.dart';
+import 'saved_wallets_realtime.dart';
+import 'wallet_backup_provider.dart';
 
 final savedWalletsProvider =
     AsyncNotifierProvider<SavedWalletsNotifier, List<SavedWallet>>(
@@ -20,6 +25,9 @@ final savedWalletsProvider =
 /// and works with no network. When a user is signed in, the cloud is merged in
 /// on build and writes are mirrored to it on a best-effort basis.
 class SavedWalletsNotifier extends AsyncNotifier<List<SavedWallet>> {
+  bool _pulling = false;
+  int? _lastSeenEventId;
+
   @override
   Future<List<SavedWallet>> build() async {
     final repository = ref.watch(savedWalletRepositoryProvider);
@@ -41,6 +49,15 @@ class SavedWalletsNotifier extends AsyncNotifier<List<SavedWallet>> {
 
     if (user != null) {
       await _mergeCloudIntoLocal(repository);
+
+      // Another device changed the cloud list: pull it into Isar without
+      // pushing local rows back up, which would loop.
+      ref.listen(savedWalletFeedProvider, (previous, next) {
+        final latest = next.valueOrNull?.latest;
+        if (latest == null || latest.id == _lastSeenEventId) return;
+        _lastSeenEventId = latest.id;
+        unawaited(_pullCloudIntoLocal());
+      });
     }
 
     return repository.getAll();
@@ -144,6 +161,91 @@ class SavedWalletsNotifier extends AsyncNotifier<List<SavedWallet>> {
     } catch (_) {
       // Intentionally ignored; see doc comment.
     }
+  }
+
+  /// Reads the cloud list into Isar without writing anything back.
+  ///
+  /// Used for realtime notifications. Pushing local-only rows here would make
+  /// two devices echo each other forever.
+  Future<void> _pullCloudIntoLocal() async {
+    if (_pulling) return;
+    final remote = ref.read(savedWalletsRemoteProvider);
+    if (remote == null) return;
+
+    _pulling = true;
+    try {
+      final cloud = await remote.fetchAll();
+      final repository = ref.read(savedWalletRepositoryProvider);
+      for (final wallet in cloud) {
+        await repository.save(address: wallet.address, label: wallet.label);
+      }
+      state = AsyncData(await repository.getAll());
+    } catch (_) {
+      // A live signal is best-effort; the next event retries.
+    } finally {
+      _pulling = false;
+    }
+  }
+
+  /// Uploads every saved wallet to the user's private bucket.
+  ///
+  /// Returns how many wallets were included. Throws [WalletBackupException]
+  /// with a message safe to show the user.
+  Future<int> backupToCloud() async {
+    final service = ref.read(walletBackupServiceProvider);
+    if (service == null) {
+      throw const WalletBackupException(
+        'Cloud backup is not configured in this build.',
+      );
+    }
+
+    final wallets = await ref.read(savedWalletRepositoryProvider).getAll();
+    await service.backup(wallets);
+    return wallets.length;
+  }
+
+  /// Merges the cloud backup into this device and the cloud list.
+  ///
+  /// Restore never deletes: newer wallets that are not in the backup stay.
+  /// Invalid addresses in the file are skipped, so a corrupted export cannot
+  /// poison the portfolio.
+  Future<int> restoreFromCloud() async {
+    final service = ref.read(walletBackupServiceProvider);
+    if (service == null) {
+      throw const WalletBackupException(
+        'Cloud backup is not configured in this build.',
+      );
+    }
+
+    final entries = await service.download();
+    if (entries == null) {
+      throw const WalletBackupException(
+        'No cloud backup exists for this account yet.',
+      );
+    }
+
+    final repository = ref.read(savedWalletRepositoryProvider);
+    var restored = 0;
+    for (final entry in entries) {
+      final address = entry.address.trim();
+      try {
+        EthereumAddress.fromHex(address);
+      } catch (_) {
+        continue;
+      }
+
+      await repository.save(address: address, label: entry.label);
+      await _mirror(
+        (remote) => remote.upsert(
+          address: address.toLowerCase(),
+          label: entry.label,
+        ),
+      );
+      restored += 1;
+    }
+
+    state = AsyncData(await repository.getAll());
+    return restored;
   }
 }
 

@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet_wave/src/features/auth/domain/auth_error.dart';
 
 void main() {
-  test('maps the common Supabase auth failures to plain language', () {
+  test('maps the common auth failures to plain language', () {
     expect(
       friendlyAuthError('Invalid login credentials'),
       'Email or password is incorrect.',

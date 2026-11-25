@@ -12,7 +12,7 @@ class AuthException implements Exception {
   String toString() => message;
 }
 
-/// Cloud sync is optional. When the app is built without Supabase keys, this
+/// Cloud sync is optional. When the app is built without Neon URLs, this
 /// is thrown if a user tries to sign in, and the UI shows a setup hint instead
 /// of a crash.
 class AuthUnavailableException extends AuthException {
@@ -30,19 +30,24 @@ class AuthUnavailableException extends AuthException {
 String friendlyAuthError(String raw) {
   final text = raw.toLowerCase();
 
-  if (text.contains('invalid login credentials')) {
+  if (text.contains('invalid login credentials') ||
+      text.contains('invalid email or password')) {
     return 'Email or password is incorrect.';
   }
   if (text.contains('user already registered') ||
-      text.contains('already exists')) {
+      text.contains('already exists') ||
+      text.contains('user already exists')) {
     return 'That email already has an account. Sign in instead.';
   }
-  if (text.contains('email not confirmed')) {
+  if (text.contains('email not confirmed') ||
+      text.contains('email not verified') ||
+      text.contains('verify your email')) {
     return 'Check your inbox and confirm your email, then sign in.';
   }
   if (text.contains('password should be') ||
       text.contains('weak password') ||
-      text.contains('password is too short')) {
+      text.contains('password is too short') ||
+      text.contains('password too short')) {
     return 'Use a password with at least 6 characters.';
   }
   if (text.contains('rate limit') || text.contains('too many requests')) {

@@ -1,7 +1,7 @@
 /// The signed-in user, reduced to what the UI needs.
 ///
-/// Deliberately not the Supabase `User` type: the rest of the app should never
-/// depend on a vendor SDK. That is what lets us swap Supabase for a FastAPI
+/// Deliberately not a vendor `User` type: the rest of the app should never
+/// depend on a vendor SDK. That is what lets us swap Neon for a FastAPI
 /// backend later without touching screens or providers.
 class AuthUser {
   const AuthUser({required this.id, required this.email});

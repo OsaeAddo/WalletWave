@@ -7,7 +7,7 @@ import '../domain/auth_user.dart';
 /// The single place the app chooses an auth backend.
 ///
 /// Defaults to a disabled backend so tests and unconfigured builds never touch
-/// the network. `main.dart` overrides it when Supabase keys are present.
+/// the network. `main.dart` overrides it when Neon URLs are present.
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return const DisabledAuthRepository();
 });
