@@ -10,7 +10,8 @@ WalletWave is a Flutter crypto app with two working domains:
 
 - **Markets** — fetch top coins from CoinGecko, cache them in Isar, stream live
   prices from Binance, search by name or symbol.
-- **Portfolio** — query the native balance of an EVM address over JSON-RPC.
+- **Portfolio** — query the native and tracked ERC-20 balances of an EVM address
+  over JSON-RPC and value them in USD from market prices.
 - **Auth + sync** — optional email/password sign-in through Neon Auth, syncing
   saved wallets to Postgres through the Data API, protected by Row Level
   Security, with a Realtime change feed and a private Object Storage backup.
@@ -30,11 +31,12 @@ Each row names the file that proves the claim.
 | Dio client + logging | Done | `lib/src/core/network/dio_provider.dart`, `logging_interceptor.dart` |
 | Auth token interceptor | Done | `lib/src/core/network/auth_interceptor.dart` (registered on the Neon Data API client) |
 | Market REST + Isar cache | Done | `lib/src/features/market/data/market_repository.dart` |
-| Market live prices (WS) | Done, one known reconnect bug | `lib/src/features/market/data/market_price_ws_provider.dart` |
+| Market live prices (WS) | Done, capped exponential backoff with jitter | `lib/src/features/market/data/market_price_ws_provider.dart`, `core/network/backoff.dart` |
 | Market search/filter | Done | `lib/src/features/market/presentation/market_dashboard_screen.dart` |
 | EVM native balance | Done | `lib/src/features/portfolio/data/evm_client_service.dart` |
 | EVM ERC-20 balance | Done | `evm_client_service.dart` `getErc20Balance`, `ethereum_token.dart` |
-| Portfolio screen | Done (native + tracked ERC-20 balances) | `portfolio_screen.dart`, `portfolio_providers.dart` |
+| Portfolio screen | Done (native + tracked ERC-20 balances, live USD value) | `portfolio_screen.dart`, `portfolio_providers.dart`, `portfolio_valuation.dart` |
+| USD price index + formatting | Done (cached CoinGecko, live Binance wins, $1 stablecoin fallback) | `market/application/coin_prices_provider.dart`, `core/format/usd.dart` |
 | Navigation shell (tabs) | Done | `lib/src/core/router/app_shell.dart`, `app_router.dart` |
 | Auth domain | Done (Neon Auth email/password) | `features/auth/`, `neon_auth_repository.dart`, `auth_providers.dart` |
 | Saved wallets / nicknames | Done, local + optional cloud sync | `saved_wallet_repository.dart`, `saved_wallets_remote.dart`, `neon_saved_wallets_remote.dart` |
@@ -42,9 +44,8 @@ Each row names the file that proves the claim.
 | Cloud schema + RLS | Done | `neon/migrations/0001_saved_wallets.sql` |
 | Realtime change feed | Done (experimental Neon Realtime, hand-written Dart client) | `neon_realtime_client.dart`, `saved_wallets_realtime.dart` |
 | Object Storage backup | Done (presigned upload/download) | `wallet_backup_service.dart`, `functions/api.ts` |
-| Multi-chain switching | **Missing** | single Ethereum mainnet RPC only |
+| Multi-chain switching | **Missing** | single Ethereum mainnet RPC only (`ethereum-rpc.publicnode.com`) |
 | Custom tokens / user-added metadata | **Missing** | tokens come from the static `kEthereumErc20Tokens` list; no add-token UI |
-| Portfolio fiat valuation | **Missing** | market and portfolio not joined |
 
 There is **no** `EVMWalletEntity`, `EvmNetwork`, `AddCustomTokenDialog`, or
 custom-token notifier in this repository. Saved wallets use
@@ -151,9 +152,14 @@ class.
   and AWS keys exist only in `.env.local` and the deployed function.
 - **The object key comes from the verified JWT subject.** A client cannot ask for
   a URL to someone else's backup because it never names the key.
+- **Valuation is derived, never stored.** `portfolioValuationProvider` joins the
+  loaded snapshot with `coinPricesProvider`, so prices can tick without re-running
+  the RPC calls. Assets with no price are excluded from the total and counted in
+  the UI; the total is `null` when nothing could be priced. Stablecoins fall back
+  to $1 because the app must stay useful offline.
 - **Analyzer excludes generated and platform folders.** Keeps the signal on
-  hand-written code. Stricter lints (`strict-casts`, `require_trailing_commas`,
-  `unawaited_futures`) are intentionally deferred to milestones that touch the code.
+  hand-written code. Strict casts, inference and raw types are on, along with
+  `require_trailing_commas` and `unawaited_futures`.
 - **Tests run serially** (`flutter test -j 1`) because Isar uses a native database.
   The default suite is offline; `tool/e2e/neon_sync_e2e_test.dart` is the explicit
   real-backend check.
@@ -166,11 +172,10 @@ disposal.
 
 | Issue | Milestone |
 |---|---|
-| WS reconnect uses a fixed 5s delay instead of backoff | later |
 | ERC-20 list is static; unknown tokens are not displayed | later (custom tokens) |
 | Cloud sync merges labels with "cloud wins"; no per-row timestamps | later |
 | Neon Realtime is an experimental service; the Dart client is hand-written | monitor |
-| No fiat valuation joining market and portfolio | M6 |
+| The default public RPC can change limits or retire; it is one constant to swap | monitor |
 | No password reset or email-reset UI beyond Neon Auth defaults | later |
 | No OAuth / deep links (deliberate on Linux desktop) | later |
 | `libsecret` and a keyring are required to stay signed in on Linux | documented in README |
@@ -208,4 +213,4 @@ NEON_E2E_EMAIL=... NEON_E2E_PASSWORD=... \
 | **M3** | ✅ Portfolio shows native balance plus tracked ERC-20 holdings |
 | **M4** | ✅ Saved wallets persisted in Isar, selectable from the portfolio screen |
 | **M5** | ✅ Optional Neon auth; RLS-scoped sync, live change feed, private Object Storage backup |
-| **M6** | Portfolio valuation, hardening, strict lints |
+| **M6** | ✅ Portfolio USD valuation, WS backoff, strict lints |

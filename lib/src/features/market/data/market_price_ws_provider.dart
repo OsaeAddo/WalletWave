@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../../../core/network/backoff.dart';
+
 // Provides a map of symbol -> live price (e.g., {'btc': 60500.20, 'eth': 3100.50})
 final livePricesProvider =
     NotifierProvider<LivePricesNotifier, Map<String, double>>(
@@ -16,6 +18,9 @@ class LivePricesNotifier extends Notifier<Map<String, double>> {
   WebSocketChannel? _channel;
   Timer? _reconnectTimer;
   bool _disposed = false;
+
+  /// Consecutive failed connection attempts; reset by the first live message.
+  int _attempt = 0;
 
   @override
   Map<String, double> build() {
@@ -43,22 +48,37 @@ class LivePricesNotifier extends Notifier<Map<String, double>> {
   }
 
   void _handleMessage(dynamic message) {
-    final List<dynamic> data = jsonDecode(message as String);
+    if (message is! String) return;
+
+    // Traffic proves the socket works, so the next outage starts from 2s again.
+    _attempt = 0;
+
+    final dynamic decoded = jsonDecode(message);
+    if (decoded is! List<dynamic>) return;
+
     final Map<String, double> newPrices = {...state};
     var hasChanges = false;
 
-    for (final item in data) {
-      final symbol = item['s'] as String;
+    for (final item in decoded) {
+      // Binance frames are loosely typed JSON; validate before reading.
+      if (item is! Map<String, dynamic>) continue;
 
-      // We only track USDT pairs to match our USD fiat base
+      final symbol = item['s'];
+      if (symbol is! String) continue;
+
+      // We only track USDT pairs to match our USD fiat base.
       if (symbol.endsWith('USDT')) {
-        // Convert Binance 'BTCUSDT' to CoinGecko 'btc'
-        final baseSymbol = symbol.replaceAll('USDT', '').toLowerCase();
-        final price = double.tryParse(item['c'] as String);
+        final rawPrice = item['c'];
+        final price = rawPrice is String ? double.tryParse(rawPrice) : null;
 
-        if (price != null && newPrices[baseSymbol] != price) {
-          newPrices[baseSymbol] = price;
-          hasChanges = true;
+        if (price != null) {
+          // Convert Binance 'BTCUSDT' to CoinGecko 'btc'.
+          final baseSymbol = symbol.replaceAll('USDT', '').toLowerCase();
+
+          if (newPrices[baseSymbol] != price) {
+            newPrices[baseSymbol] = price;
+            hasChanges = true;
+          }
         }
       }
     }
@@ -72,8 +92,13 @@ class LivePricesNotifier extends Notifier<Map<String, double>> {
   void _scheduleReconnect() {
     if (_disposed) return;
 
-    // Implement exponential backoff in a true production app
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), _connect);
+    // `onError` and `onDone` can both fire for the same failure. Scheduling
+    // twice would skip an attempt and jump the delay, so keep only the first.
+    if (_reconnectTimer?.isActive ?? false) return;
+
+    final delay = reconnectDelay(_attempt);
+    _attempt++;
+
+    _reconnectTimer = Timer(delay, _connect);
   }
 }

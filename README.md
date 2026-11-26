@@ -12,10 +12,13 @@ through a raw EVM JSON-RPC client.
 
 - **Markets** — top coins from CoinGecko, cached in Isar, refreshed in the background,
   searchable by name or symbol.
-- **Live prices** — Binance mini-ticker WebSocket stream with row-level rebuilds.
+- **Live prices** — Binance mini-ticker WebSocket stream with row-level rebuilds
+  and capped exponential backoff when the socket drops.
 - **Portfolio** — look up an EVM address and see its native ETH balance plus
-  tracked ERC-20 holdings (USDC, USDT, DAI, LINK), all via JSON-RPC. Save wallets
-  locally (Isar) and reload them with one tap.
+  tracked ERC-20 holdings (USDC, USDT, DAI, LINK) with a live USD valuation,
+  all via JSON-RPC. Save wallets locally (Isar) and reload them with one tap.
+  The total covers priced assets only and says how many were left out; stablecoins
+  fall back to $1 when no market price is available.
 - **Optional cloud sync** — sign in with email and password (Neon Auth) to sync
   saved wallets across machines. The app works fully signed out and offline;
   signing in only adds sync.
@@ -31,7 +34,8 @@ lib/
     ├── core/                       # Shared infrastructure
     │   ├── config/                 # Public Neon URLs (--dart-define)
     │   ├── database/               # Isar instance provider
-    │   ├── network/                # Dio clients and interceptors
+    │   ├── format/                 # USD formatting helpers
+    │   ├── network/                # Dio clients, interceptors, reconnect backoff
     │   └── router/                 # GoRouter plus AppShell (bottom tabs)
     └── features/                   # Feature-first boundaries
         ├── auth/
@@ -45,10 +49,10 @@ lib/
         │   ├── domain/             # MarketCoin model
         │   └── presentation/       # Market dashboard UI
         └── portfolio/
-            ├── application/        # Portfolio, saved-wallet, realtime and backup providers
+            ├── application/        # Portfolio, valuation, saved-wallet, realtime and backup providers
             ├── data/               # EVM client, Isar repository, Neon Data API,
             │                       # Realtime client, backup service
-            ├── domain/             # PortfolioSnapshot, TokenBalance, SavedWallet
+            ├── domain/             # PortfolioSnapshot, PortfolioValuation, TokenBalance, SavedWallet
             └── presentation/       # Portfolio UI
 
 functions/
@@ -168,6 +172,10 @@ Tests run with a single worker (`-j 1`) because Isar opens a native database per
 test file and tests initialize Isar core on first run. The default suite never
 touches the network: auth, cloud sync, realtime and backup are replaced with
 fakes.
+
+`analysis_options.yaml` enables strict casts, inference and raw types, plus
+`require_trailing_commas` and `unawaited_futures`, so forgotten awaits and
+implicit `dynamic` values fail the analyzer.
 
 The real backend is exercised separately:
 

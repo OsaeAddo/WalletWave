@@ -192,14 +192,49 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         const SizedBox(height: 24),
         if (!available)
           Card(
-            color: theme.colorScheme.errorContainer,
+            // Missing cloud config is a supported state, not a failure, so use
+            // a neutral surface instead of the error colour.
+            color: theme.colorScheme.surfaceContainerHighest,
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(
-                'Cloud sync is not configured in this build. '
-                'See the README "Cloud sync" section for the '
-                '--dart-define values.',
-                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cloud sync is off in this build.',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Everything works offline. To enable syncing, '
+                          'generate the public URLs and launch with them:',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SelectableText(
+                          'bash tool/flutter-env.sh\n'
+                          'flutter run -d linux '
+                          '--dart-define-from-file=.env.flutter',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -32,8 +32,10 @@ void main() {
     test('reads the exp claim as UTC', () {
       final expiry = jwtExpiry(tokenWith({'exp': 1795479155}));
 
-      expect(expiry,
-          DateTime.fromMillisecondsSinceEpoch(1795479155000, isUtc: true));
+      expect(
+        expiry,
+        DateTime.fromMillisecondsSinceEpoch(1795479155000, isUtc: true),
+      );
     });
 
     test('returns null for malformed tokens', () {

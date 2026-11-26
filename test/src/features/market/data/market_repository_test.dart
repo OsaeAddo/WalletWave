@@ -31,7 +31,8 @@ void main() {
 
     // Create an isolated temporary directory for the database
     tempDir = Directory.systemTemp.createTempSync(
-        'isar_test_dir_${DateTime.now().millisecondsSinceEpoch}');
+      'isar_test_dir_${DateTime.now().millisecondsSinceEpoch}',
+    );
 
     isar = await Isar.open(
       [MarketCoinEntitySchema],
@@ -82,19 +83,23 @@ void main() {
         "name": "Ethereum",
         "image": "https://example.com/eth.png",
         "current_price": 3000.0,
-        "price_change_percentage_24h": -1.2
+        "price_change_percentage_24h": -1.2,
       }
     ];
 
     // Intercept the Dio GET request and return a fake 200 OK response
-    when(() => mockDio.get(
-          '/coins/markets',
-          queryParameters: any(named: 'queryParameters'),
-        )).thenAnswer((_) async => Response(
-          requestOptions: RequestOptions(path: '/coins/markets'),
-          data: mockJsonResponse,
-          statusCode: 200,
-        ));
+    when(
+      () => mockDio.get<dynamic>(
+        '/coins/markets',
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(path: '/coins/markets'),
+        data: mockJsonResponse,
+        statusCode: 200,
+      ),
+    );
 
     // 2. Act: Execute the repository fetch logic
     final result = await repository.fetchAndCacheMarketCoins();

@@ -46,7 +46,9 @@ void main() {
     expect(wallets.single.label, 'Cold storage');
     // Addresses are normalized, so lookups are case-insensitive.
     expect(
-        wallets.single.address, '0x000000000000000000000000000000000000dead');
+      wallets.single.address,
+      '0x000000000000000000000000000000000000dead',
+    );
   });
 
   test('does not duplicate the same address in a different casing', () async {
@@ -67,9 +69,13 @@ void main() {
 
   test('remove deletes only the requested wallet', () async {
     await repository.save(
-        address: '0x0000000000000000000000000000000000000001', label: 'One');
+      address: '0x0000000000000000000000000000000000000001',
+      label: 'One',
+    );
     await repository.save(
-        address: '0x0000000000000000000000000000000000000002', label: 'Two');
+      address: '0x0000000000000000000000000000000000000002',
+      label: 'Two',
+    );
 
     final wallets = await repository.getAll();
     final toRemove = wallets.firstWhere((wallet) => wallet.label == 'One').id;

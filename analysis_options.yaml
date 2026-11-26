@@ -1,6 +1,11 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  language:
+    # No implicit downcasts or `dynamic` leaks.
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
   exclude:
     - build/**
     - .dart_tool/**
@@ -12,3 +17,10 @@ analyzer:
     - web/**
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+
+linter:
+  rules:
+    # Formatting rules that make diffs small and intentional.
+    - require_trailing_commas
+    # A forgotten `await` on a Future is almost always a bug.
+    - unawaited_futures

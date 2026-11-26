@@ -2,8 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'evm_client_service.dart';
 
-// Public Ethereum Mainnet RPC URL
-const String kEthereumRpcUrl = 'https://cloudflare-eth.com';
+/// Public Ethereum mainnet RPC.
+///
+/// Cloudflare's old `cloudflare-eth.com` endpoint now answers
+/// "Cannot fulfill request", so it silently broke every balance read. This
+/// endpoint is public and keyless; swap it here if it is ever retired.
+const String kEthereumRpcUrl = 'https://ethereum-rpc.publicnode.com';
 
 final httpClientProvider = Provider<http.Client>((ref) {
   final client = http.Client();

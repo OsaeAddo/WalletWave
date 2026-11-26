@@ -20,7 +20,7 @@ class MarketDashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.read(marketCoinsProvider.notifier).refresh(),
-          )
+          ),
         ],
       ),
       body: Column(
