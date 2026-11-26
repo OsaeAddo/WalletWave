@@ -41,8 +41,10 @@ void main() {
 
     test('never returns a zero delay', () {
       for (var seed = 0; seed < 50; seed++) {
-        expect(reconnectDelay(seed % 10, random: Random(seed)),
-            isNot(Duration.zero));
+        expect(
+          reconnectDelay(seed % 10, random: Random(seed)),
+          isNot(Duration.zero),
+        );
       }
     });
   });

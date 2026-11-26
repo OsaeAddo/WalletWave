@@ -30,7 +30,7 @@ class MarketRepository {
   /// Fetches from the REST endpoint and writes to Isar local storage
   Future<List<MarketCoin>> fetchAndCacheMarketCoins() async {
     try {
-      final response = await _dio.get(
+      final response = await _dio.get<dynamic>(
         '/coins/markets',
         queryParameters: {
           'vs_currency': 'usd',
@@ -41,8 +41,17 @@ class MarketRepository {
         },
       );
 
-      final List<dynamic> data = response.data;
-      final coins = data.map((json) => MarketCoin.fromJson(json)).toList();
+      final dynamic decoded = response.data;
+      if (decoded is! List<dynamic>) {
+        throw ApiException('Unexpected market response.');
+      }
+
+      final coins = decoded.map((item) {
+        if (item is! Map<String, dynamic>) {
+          throw ApiException('Unexpected market row.');
+        }
+        return MarketCoin.fromJson(item);
+      }).toList();
 
       // Persist network results into Isar via a write transaction
       await _isar.writeTxn(() async {

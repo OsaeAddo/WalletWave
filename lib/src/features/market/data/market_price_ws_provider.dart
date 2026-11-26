@@ -48,25 +48,37 @@ class LivePricesNotifier extends Notifier<Map<String, double>> {
   }
 
   void _handleMessage(dynamic message) {
+    if (message is! String) return;
+
     // Traffic proves the socket works, so the next outage starts from 2s again.
     _attempt = 0;
 
-    final List<dynamic> data = jsonDecode(message as String);
+    final dynamic decoded = jsonDecode(message);
+    if (decoded is! List<dynamic>) return;
+
     final Map<String, double> newPrices = {...state};
     var hasChanges = false;
 
-    for (final item in data) {
-      final symbol = item['s'] as String;
+    for (final item in decoded) {
+      // Binance frames are loosely typed JSON; validate before reading.
+      if (item is! Map<String, dynamic>) continue;
 
-      // We only track USDT pairs to match our USD fiat base
+      final symbol = item['s'];
+      if (symbol is! String) continue;
+
+      // We only track USDT pairs to match our USD fiat base.
       if (symbol.endsWith('USDT')) {
-        // Convert Binance 'BTCUSDT' to CoinGecko 'btc'
-        final baseSymbol = symbol.replaceAll('USDT', '').toLowerCase();
-        final price = double.tryParse(item['c'] as String);
+        final rawPrice = item['c'];
+        final price = rawPrice is String ? double.tryParse(rawPrice) : null;
 
-        if (price != null && newPrices[baseSymbol] != price) {
-          newPrices[baseSymbol] = price;
-          hasChanges = true;
+        if (price != null) {
+          // Convert Binance 'BTCUSDT' to CoinGecko 'btc'.
+          final baseSymbol = symbol.replaceAll('USDT', '').toLowerCase();
+
+          if (newPrices[baseSymbol] != price) {
+            newPrices[baseSymbol] = price;
+            hasChanges = true;
+          }
         }
       }
     }

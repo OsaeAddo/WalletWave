@@ -13,7 +13,10 @@ class LoggingInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
     if (kDebugMode) {
       debugPrint(
         '✅ HTTP RESPONSE [${response.statusCode}] => PATH: ${response.requestOptions.path}',

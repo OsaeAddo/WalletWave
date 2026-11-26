@@ -113,8 +113,11 @@ void main() {
 BigInt _eth(int whole) => BigInt.from(whole) * BigInt.from(10).pow(18);
 
 /// Builds a balance from a human-readable amount by shifting the decimal point.
-TokenBalance _balance(EthereumToken token, String amount,
-    {required int decimals}) {
+TokenBalance _balance(
+  EthereumToken token,
+  String amount, {
+  required int decimals,
+}) {
   final parts = amount.split('.');
   final whole = BigInt.parse(parts.first);
   final fractionText = parts.length == 1 ? '' : parts[1];

@@ -65,7 +65,7 @@ void main() {
         'live_id': '7',
         'epoch': '1',
         'baseline_sync_attempt': '1',
-        'mvcc': {'xmin': '0', 'xmax': '0', 'xip': []},
+        'mvcc': {'xmin': '0', 'xmax': '0', 'xip': <dynamic>[]},
       };
 
   Map<String, dynamic> baselineBatch(List<Map<String, dynamic>> rows) => {
@@ -155,11 +155,11 @@ void main() {
       baselineBatch([
         {
           'row_key': '5',
-          'values': ['5', 'insert', '2026-11-24T10:00:00Z']
+          'values': ['5', 'insert', '2026-11-24T10:00:00Z'],
         },
         {
           'row_key': '4',
-          'values': ['4', 'insert', '2026-11-24T09:00:00Z']
+          'values': ['4', 'insert', '2026-11-24T09:00:00Z'],
         },
       ]),
     );
