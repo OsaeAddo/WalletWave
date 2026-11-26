@@ -13,10 +13,12 @@ import 'portfolio_providers.dart';
 /// `null` means no address is loaded, the same contract as [portfolioProvider].
 final portfolioValuationProvider =
     Provider<AsyncValue<PortfolioValuation?>>((ref) {
-  final prices = ref.watch(coinPricesProvider);
-  return ref.watch(portfolioProvider).whenData(
-        (snapshot) => snapshot == null
-            ? null
-            : PortfolioValuation.fromSnapshot(snapshot, prices),
-      );
+  return ref.watch(portfolioProvider).whenData((snapshot) {
+    if (snapshot == null) return null;
+
+    // Watched only once there is something to value, so the live socket is not
+    // opened for an empty screen.
+    final prices = ref.watch(coinPricesProvider);
+    return PortfolioValuation.fromSnapshot(snapshot, prices);
+  });
 });

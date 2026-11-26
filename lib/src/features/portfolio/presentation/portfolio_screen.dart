@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/format/usd.dart';
 import '../../auth/presentation/auth_action_button.dart';
 import '../application/portfolio_providers.dart';
+import '../application/portfolio_valuation_provider.dart';
 import '../application/saved_wallets_provider.dart';
-import '../domain/portfolio_snapshot.dart';
+import '../domain/portfolio_valuation.dart';
 import '../domain/saved_wallet.dart';
-import '../domain/token_balance.dart';
 
 class PortfolioScreen extends ConsumerStatefulWidget {
   const PortfolioScreen({super.key});
@@ -67,7 +68,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final portfolioAsync = ref.watch(portfolioProvider);
+    // Valuation watches balances and prices, so live ticks repaint the dollars
+    // without re-running the RPC calls.
+    final portfolioAsync = ref.watch(portfolioValuationProvider);
     final savedWallets =
         ref.watch(savedWalletsProvider).valueOrNull ?? const [];
     final theme = Theme.of(context);
@@ -142,9 +145,9 @@ class _PortfolioScreenState extends ConsumerState<PortfolioScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: portfolioAsync.when(
-                data: (snapshot) => snapshot == null
+                data: (valuation) => valuation == null
                     ? const _EmptyPrompt()
-                    : _PortfolioView(snapshot: snapshot),
+                    : _PortfolioView(valuation: valuation),
                 loading: () => const Center(
                   child: CircularProgressIndicator(),
                 ),
@@ -202,13 +205,15 @@ class _ErrorView extends StatelessWidget {
 }
 
 class _PortfolioView extends StatelessWidget {
-  const _PortfolioView({required this.snapshot});
+  const _PortfolioView({required this.valuation});
 
-  final PortfolioSnapshot snapshot;
+  final PortfolioValuation valuation;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final native = valuation.assets.first;
+    final tokens = valuation.assets.skip(1);
 
     return ListView(
       children: [
@@ -219,20 +224,39 @@ class _PortfolioView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Native Balance',
+                  'Portfolio value',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${snapshot.nativeBalance.formattedAmount} '
-                  '${snapshot.nativeBalance.token.symbol}',
+                  // A dash is honest: nothing could be priced.
+                  valuation.totalUsd == null
+                      ? '—'
+                      : formatUsd(valuation.totalUsd!),
                   style: theme.textTheme.headlineMedium,
+                ),
+                if (!valuation.isComplete) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Excludes ${valuation.unpricedCount} '
+                    '${valuation.unpricedCount == 1 ? 'asset' : 'assets'} '
+                    'with no market price.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const Divider(height: 32),
+                _BalanceLine(
+                  label: '${native.balance.formattedAmount} '
+                      '${native.balance.token.symbol}',
+                  valueUsd: native.valueUsd,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  shortAddress(snapshot.address),
+                  shortAddress(valuation.address),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -244,7 +268,7 @@ class _PortfolioView extends StatelessWidget {
         const SizedBox(height: 16),
         Text('Tokens', style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
-        if (snapshot.tokenBalances.isEmpty)
+        if (tokens.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Text('No tracked ERC-20 balances for this address.'),
@@ -254,8 +278,7 @@ class _PortfolioView extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                for (final balance in snapshot.tokenBalances)
-                  _TokenRow(balance: balance),
+                for (final asset in tokens) _TokenRow(asset: asset),
               ],
             ),
           ),
@@ -264,21 +287,63 @@ class _PortfolioView extends StatelessWidget {
   }
 }
 
-class _TokenRow extends StatelessWidget {
-  const _TokenRow({required this.balance});
+class _BalanceLine extends StatelessWidget {
+  const _BalanceLine({required this.label, required this.valueUsd});
 
-  final TokenBalance balance;
+  final String label;
+  final double? valueUsd;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    return Row(
+      children: [
+        Text(label, style: theme.textTheme.titleMedium),
+        const Spacer(),
+        Text(
+          valueUsd == null ? 'no price' : formatUsd(valueUsd!),
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: valueUsd == null
+                ? theme.colorScheme.onSurfaceVariant
+                : theme.colorScheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TokenRow extends StatelessWidget {
+  const _TokenRow({required this.asset});
+
+  final AssetValuation asset;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final valueUsd = asset.valueUsd;
+
     return ListTile(
-      title: Text(balance.token.symbol),
-      subtitle: Text(balance.token.name),
-      trailing: Text(
-        balance.formattedAmount,
-        style: theme.textTheme.titleMedium,
+      title: Text(asset.balance.token.symbol),
+      subtitle: Text(asset.balance.token.name),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            asset.balance.formattedAmount,
+            style: theme.textTheme.titleMedium,
+          ),
+          Text(
+            valueUsd == null ? 'no price' : formatUsd(valueUsd),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: valueUsd == null
+                  ? theme.colorScheme.onSurfaceVariant
+                  : theme.colorScheme.primary,
+            ),
+          ),
+        ],
       ),
     );
   }

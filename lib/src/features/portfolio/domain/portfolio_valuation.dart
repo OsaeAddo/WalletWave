@@ -34,7 +34,10 @@ class AssetValuation {
 /// tells the UI whether that total covers everything, so it can warn instead of
 /// silently under-reporting.
 class PortfolioValuation {
-  const PortfolioValuation({required this.assets});
+  const PortfolioValuation({required this.address, required this.assets});
+
+  /// The wallet these numbers belong to.
+  final String address;
 
   /// Native ETH first, then ERC-20 holdings, mirroring [PortfolioSnapshot].
   final List<AssetValuation> assets;
@@ -53,6 +56,7 @@ class PortfolioValuation {
     }
 
     return PortfolioValuation(
+      address: snapshot.address,
       assets: [
         AssetValuation(
           balance: snapshot.nativeBalance,
